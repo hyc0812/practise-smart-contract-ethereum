@@ -1,6 +1,37 @@
 # practise-smart-contract-ethereum
 This is a repo for me to practise my Solidity skills.
 
+## Nested Mapping Practice
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.26;
+
+contract PractisingNestedMapping {
+
+    // Declare a state variable containing value with nested mapping
+    mapping (address => mapping (string => bool)) private attendanceSheet;
+
+    // Declare a function to set the value for the state variable
+    function setAttendance (address _addr, string memory _name, bool _isPresent) public {
+        attendanceSheet[_addr][_name] = _isPresent;
+    }
+
+    // Declare a function to get the value of the state variable
+    function getAttendance (address _addr, string memory _name) public view returns (bool) {
+        return attendanceSheet[_addr][_name];
+    }
+
+    // Declare a function to toggle the value of isPresent
+    function toggleIsPresent (address _addr, string memory _name) public {
+        attendanceSheet[_addr][_name] = !attendanceSheet[_addr][_name];
+    }
+
+}
+
+```
+
+
 
 ## Mapping Practice
 
