@@ -1,6 +1,47 @@
 # practise-smart-contract-ethereum
 This is a repo for me to practise my Solidity skills.
 
+
+## Mapping from address to struct
+
+```solidity
+
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.26;
+
+contract StructTesting {
+
+    // Declare a struct for student
+    struct Student {
+        string name;
+        uint256 id;
+        bool isAttended;
+    }
+
+    // Declare a state variable to hold value for all the students; mapping from address to struct
+    mapping (address => Student) private students;
+
+    // Decare a funciton to take attendance
+    function registerAttendance (address _addr, string memory _name, uint256 _id, bool _isAttended) public {
+                students[_addr] = Student({
+                name: _name,
+                id: _id,
+                isAttended: _isAttended
+        });
+    }
+
+    function getAttendanceInfo (address _addr) public view returns (string memory, uint256, bool) {
+        return (students[_addr].name, students[_addr].id, students[_addr].isAttended);
+    }
+
+    function toggleAttendance (address _addr) public {
+        students[_addr].isAttended = !students[_addr].isAttended;
+    }
+}
+```
+
+
+
 ## Nested Mapping Practice
 This is a practice mapping from address to string and to boolean
 
