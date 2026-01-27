@@ -1,6 +1,66 @@
 # practise-smart-contract-ethereum
 This is a repo for me to practise my Solidity skills.
 
+## Mapping from address to struct with msg.sender and modifier
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.26;
+
+contract StudentRegisterSystem {
+
+    // Declare a struct for student structure
+    struct Student {
+        string name;
+        string id;
+        string programRegistered;
+        bool isRegistered;
+    }
+
+    // Check the caller is the owner
+    modifier onlyOwner(){
+        require(msg.sender == 0x5B38Da6a701c568545dCfcB03FcB875f56beddC4, "not owner");
+        _;
+    }
+
+    // Declare a state variable mapping from address to struct
+    mapping (address => Student) private students;
+
+    // declare a function that allows students to register in the system
+    function studentResgiter (string memory _name, string memory _id, string memory _program) public {
+        students[msg.sender] = Student({
+            name: _name,
+            id: _id,
+            programRegistered: _program,
+            isRegistered: true
+        });
+    }
+
+    // Declare a function to allow student to query themselves' results
+    function getStudentRegistry () public  view returns (string memory, string memory, string memory, bool isRegistered) {
+        return (
+            students[msg.sender].name,
+            students[msg.sender].id,
+            students[msg.sender].programRegistered,
+            students[msg.sender].isRegistered );
+    }
+
+    // Declare a function to allow contract owner to query results
+    function getStudents (address _addr) onlyOwner public view  returns (string memory, string memory, string memory, bool isRegistered) {
+        return (
+            students[_addr].name,
+            students[_addr].id,
+            students[_addr].programRegistered,
+            students[_addr].isRegistered );
+    }
+}
+
+
+```
+
+
+
+
 
 ## Mapping from address to struct
 
