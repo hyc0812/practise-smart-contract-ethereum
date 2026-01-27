@@ -23,6 +23,12 @@ contract StudentRegisterSystem {
         _;
     }
 
+    // Check the caller is the registered students
+    modifier onlyRegisteredStudents () {
+        require(students[msg.sender].isRegistered == true, "only Registered Students");
+        _;
+    }
+
     // Declare a state variable mapping from address to struct
     mapping (address => Student) private students;
 
@@ -38,6 +44,7 @@ contract StudentRegisterSystem {
 
     // Declare a function to allow student to query themselves' results
     function getStudentRegistry () public  view returns (string memory, string memory, string memory, bool isRegistered) {
+        
         return (
             students[msg.sender].name,
             students[msg.sender].id,
@@ -47,14 +54,16 @@ contract StudentRegisterSystem {
 
     // Declare a function to allow contract owner to query results
     function getStudents (address _addr) onlyOwner public view  returns (string memory, string memory, string memory, bool isRegistered) {
+        
+        Student storage s = students[_addr];
+        
         return (
-            students[_addr].name,
-            students[_addr].id,
-            students[_addr].programRegistered,
-            students[_addr].isRegistered );
+            s.name,
+            s.id,
+            s.programRegistered,
+            s.isRegistered );
     }
 }
-
 
 ```
 
