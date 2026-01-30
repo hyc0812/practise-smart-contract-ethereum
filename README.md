@@ -1,6 +1,61 @@
 # practise-smart-contract-ethereum
 This is a repo for me to practise my Solidity skills.
 
+
+## ETH Sending and Receiving
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.26;
+
+contract EtherSendingPractice {
+
+        // Payable address can send Ether via transfer or send
+        address payable public owner;
+
+        // Payable constructor can receive ether
+        constructor() payable {
+            owner = payable(msg.sender);
+        }
+
+        // Declare a event named Deposit
+        event Deposit(address indexed sender, uint256 amount);
+
+        // Declare a mapping from address to uint8
+        mapping (address => uint256) private deposits;  
+
+        // Declare a function to deposit Ether to this contract
+        function deposit() public payable {
+            deposits[msg.sender] += msg.value;
+            emit Deposit(msg.sender, msg.value);
+        }
+
+        //receive() external payable {}
+
+        // Declare a function to withdraw all ETH from contract to Owner
+        function withdraw() public {
+            uint256 amount = address(this).balance;
+            // Send all ETH to owner
+            (bool success,) = owner.call{value: amount}("");
+            require(success, "Failed to send ETH");
+        }
+
+        // Declare a function to check the deposit amount from any depositer
+        function checkDepositAmount(address _addr) public view returns (uint256) {
+            return deposits[_addr];
+        }
+}
+
+```
+
+
+
+
+
+
+
+
+
 ## Mapping from address to struct with msg.sender and modifier
 
 ```solidity
