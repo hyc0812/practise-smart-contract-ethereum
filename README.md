@@ -351,3 +351,75 @@ contract YongHashingString {
 }
 
 ```
+
+
+```solidity
+
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.26;
+
+contract EtherSendingPractice {
+
+        // Payable address can send Ether via transfer or send
+        address payable public owner;
+
+        // Payable constructor can receive ether
+        constructor() payable {
+            owner = payable(msg.sender);
+        }
+
+        modifier onlyOwner (){
+            require(msg.sender == owner, "Only Owner Can do!");
+            _;
+        }
+
+        // Declare an event for Deposit
+        event Deposit(address indexed sender, uint256 amount);
+        // Declare an event for withdrawal
+        event Withdraw(address indexed to, uint256 amount);
+        // Declare an event for transfer
+        event Transfer(address indexed from, address indexed to, uint256 amount);
+
+        // Declare a mapping from address to uint8
+        mapping (address => uint256) private deposits;  
+
+        // Declare a function to deposit Ether to this contract
+        function deposit() public payable {
+            deposits[msg.sender] += msg.value;
+            emit Deposit(msg.sender, msg.value);
+        }
+
+        receive() external payable {
+            deposits[msg.sender] += msg.value;
+            emit Deposit(msg.sender, msg.value);
+        }
+
+        // Declare a function to withdraw all ETH from the contract to the Owner
+        function withdraw() public onlyOwner {
+            uint256 amount = address(this).balance;
+            // Send all ETH to owner
+            (bool success,) = owner.call{value: amount}("");
+            require(success, "Failed to send ETH");
+            emit Withdraw(owner, amount);
+        }
+
+        // Declare a function to check the deposit amount from any depositer
+        function checkDepositAmount(address _addr) public view returns (uint256) {
+            return deposits[_addr];
+        }
+
+        // Declare a function to check the current balance of the contract
+        function checkContractBalance () public view returns (uint256) {
+            return address(this).balance;
+        }
+
+        // Declare a function that only the owner can transfer certain amount ETH from the contract to external address
+        function etherTransfer (address payable _to, uint256 _amount) public onlyOwner {
+            require(_amount <= address(this).balance, "Insufficient ETH!");
+            (bool success,) = _to.call{value: _amount}("");
+            require(success, "Failed to send Ether");
+            emit Transfer(address(this), _to, _amount);
+        }
+}
+
+```
