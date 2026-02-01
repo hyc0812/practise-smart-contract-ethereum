@@ -355,6 +355,7 @@ contract YongHashingString {
 
 ```solidity
 
+
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
@@ -414,11 +415,12 @@ contract EtherSendingPractice {
         }
 
         // Declare a function that only the owner can transfer certain amount ETH from the contract to external address
-        function etherTransfer (address payable _to, uint256 _amount) public onlyOwner {
-            require(_amount <= address(this).balance, "Insufficient ETH!");
-            (bool success,) = _to.call{value: _amount}("");
+        function etherTransfer (address payable _to, uint256 _amountGwei) public onlyOwner {
+            uint256 _amountWei = _amountGwei * 1 gwei;
+            require(_amountWei <= address(this).balance, "Insufficient ETH!");
+            (bool success,) = _to.call{value: _amountWei}("");
             require(success, "Failed to send Ether");
-            emit Transfer(address(this), _to, _amount);
+            emit Transfer(address(this), _to, _amountWei);
         }
 }
 
