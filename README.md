@@ -1,6 +1,61 @@
 # practise-smart-contract-ethereum
 This is a repo for me to practise my Solidity skills.
 
+## Practice with Struct working with Array 
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.26;
+
+contract ArrayPractising {
+
+    // Declare a structure for student
+    struct Student {
+        string name;
+        bool isCompleted;
+    }
+
+    // Declare an array for the students
+    Student[] private students;
+
+    // Declare a funtion to create a student
+    function createStudent (string memory _name) public {
+        students.push(Student({
+            name: _name,
+            isCompleted: true
+        }));
+    }
+
+    // Declare a function to get a student by using the index
+    function getStudent(uint256 _index) public view returns (string memory, bool){
+        return (students[_index].name, students[_index].isCompleted);
+    }
+
+    // Declare a function to get all the students
+    function getAllStudents() public view returns (Student[] memory) {
+        return students;
+    }
+
+    // Declare a funtion to remove/pop up the last student
+    function removeLastStudent() public {
+        students.pop();
+    }
+
+    // Declare a function to remove a student by using the index
+    function removeByIndex(uint256 _index) public {
+        delete students[_index];
+    }
+
+    // Declare a function to get the array length
+    function getArrayLength() public view returns (uint256) {
+        return students.length;
+    }
+}
+
+```
+
+
+
 ## Ether Transfer
 
 ```solidity
