@@ -1,6 +1,53 @@
 # practise-smart-contract-ethereum
 This is a repo for me to practise my Solidity skills.
 
+## Ether Transfer
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.26;
+
+contract forEtherTransfer {
+
+    modifier onlyOwner (){
+        require (msg.sender == owner, "Not Owner");
+        _;
+    }
+
+    // Declare a state variable owner
+    address payable public owner;
+
+    //Declare a function that enables the contract to receive Ether from external account
+    receive() external payable {}
+
+    // Declare a constructor that can receive Ether when deployed
+    constructor() payable {
+        owner = payable(msg.sender);
+    }
+
+    //Declare a function to check the current balance of the contract
+    function getBalance() external view returns (uint256) {
+        return address(this).balance;
+    }
+    //Declare a function to deposit Ether into the contract
+    function deposit() external payable {
+    }
+
+    // Declare a function for owner to withdraw the Ether
+    function withdraw () onlyOwner public {
+        uint256 amount = address(this).balance;
+        (bool success,) = owner.call{value: amount}("");
+        require(success, "Failed to send Ether");
+    } 
+}
+
+```
+
+
+
+
+
+
 
 ## ETH Sending and Receiving
 
