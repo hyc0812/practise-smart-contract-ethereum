@@ -1,0 +1,171 @@
+# Chainlink Node RestAPI Lambda DananoDB
+## Consumer Contract
+
+```solidity
+
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import {Chainlink, ChainlinkClient} from "@chainlink/contracts@1.5.0/src/v0.8/operatorforwarder/ChainlinkClient.sol";
+import {ConfirmedOwner} from "@chainlink/contracts@1.5.0/src/v0.8/shared/access/ConfirmedOwner.sol";
+import {LinkTokenInterface} from "@chainlink/contracts@1.5.0/src/v0.8/shared/interfaces/LinkTokenInterface.sol";
+
+/**
+ * EXAMPLE ONLY. DO NOT USE IN PRODUCTION.
+ *
+ * Compatible with Job that fulfills with ABI:
+ *   (bytes32 requestId, string value)
+ * i.e. your FINAL job uses:
+ *   encode_data abi="(bytes32 requestId, string value)"
+ */
+contract ATestnetConsumer is ChainlinkClient, ConfirmedOwner {
+  using Chainlink for Chainlink.Request;
+
+  // 0.1 LINK (18 decimals)
+  uint256 private constant ORACLE_PAYMENT = (1 * LINK_DIVISIBILITY) / 10;
+
+  // Latest text returned by your AWS API
+  string public currentText;
+
+  event RequestTextSent(bytes32 indexed requestId, string url);
+  event RequestTextFulfilled(bytes32 indexed requestId, string text);
+
+  /**
+   * Sepolia LINK token address:
+   * 0x779877A7B0D9E8603169DdbD7836e478b4624789
+   */
+  constructor() ConfirmedOwner(msg.sender) {
+    _setChainlinkToken(0x779877A7B0D9E8603169DdbD7836e478b4624789);
+  }
+
+  /**
+   * Sends a request to your directrequest job via Operator.
+   *
+   * @param _oracle Operator contract address (e.g. 0x4a7f... )
+   * @param _jobId  External Job ID / Spec ID (string) for the job
+   * @param factId  Your DynamoDB fact id, e.g. "2"
+   *
+   * The job expects CBOR keys:
+   *   get  -> full URL
+   *   path -> JSON path, here "text"
+   */
+  function requestAWSFactText(
+    address _oracle,
+    string memory _jobId,
+    string memory factId
+  ) public onlyOwner returns (bytes32 requestId) {
+    Chainlink.Request memory req =
+      _buildChainlinkRequest(stringToBytes32(_jobId), address(this), this.fulfillText.selector);
+
+    // Build URL: https://zoo3qa6z9g.execute-api.us-east-1.amazonaws.com/facts/{id}
+    string memory url = string(
+      abi.encodePacked("https://zoo3qa6z9g.execute-api.us-east-1.amazonaws.com/facts/", factId)
+    );
+
+    req._add("get", url);
+    req._add("path", "text");
+
+    requestId = _sendChainlinkRequestTo(_oracle, req, ORACLE_PAYMENT);
+    emit RequestTextSent(requestId, url);
+    return requestId;
+  }
+
+  /**
+   * Callback called by the Operator contract.
+   * MUST match your job's encode_data ABI: (bytes32 requestId, string value)
+   */
+  function fulfillText(
+    bytes32 _requestId,
+    string memory _text
+  ) public recordChainlinkFulfillment(_requestId) {
+    currentText = _text;
+    emit RequestTextFulfilled(_requestId, _text);
+  }
+
+  function getChainlinkToken() public view returns (address) {
+    return _chainlinkTokenAddress();
+  }
+
+  function withdrawLink() public onlyOwner {
+    LinkTokenInterface link = LinkTokenInterface(_chainlinkTokenAddress());
+    require(link.transfer(msg.sender, link.balanceOf(address(this))), "Unable to transfer");
+  }
+
+  function cancelRequest(
+    bytes32 _requestId,
+    uint256 _payment,
+    bytes4 _callbackFunctionId,
+    uint256 _expiration
+  ) public onlyOwner {
+    _cancelChainlinkRequest(_requestId, _payment, _callbackFunctionId, _expiration);
+  }
+
+  /**
+   * NOTE: This helper only takes the first 32 bytes of the string.
+   * It works for job IDs represented as 32-byte hex-like strings.
+   * If your UI provides a UUID string, you should use the bytes32 value the node shows
+   * (e.g. 0x....) rather than a raw UUID, otherwise it won't match.
+   */
+  function stringToBytes32(string memory source) private pure returns (bytes32 result) {
+    bytes memory temp = bytes(source);
+    if (temp.length == 0) return 0x0;
+    assembly {
+      result := mload(add(source, 32))
+    }
+  }
+}
+
+
+```
+
+Job Definition in Chainlink Node
+
+```toml
+type = "directrequest"
+schemaVersion = 1
+name = "AWS GET -> STRING (DirectRequest FINAL)"
+externalJobID = "2f922c92-c883-4874-8d12-d7868a125d1f"
+forwardingAllowed = false
+maxTaskDuration = "2m0s"
+contractAddress = "0x4a7f227Afb2A36640781E59F3f491EB087d5aF64"
+evmChainID = "11155111"
+minIncomingConfirmations = 0
+minContractPaymentLinkJuels = "0"
+observationSource = """
+decode_log  [type="ethabidecodelog"
+             abi="OracleRequest(bytes32 indexed specId, address requester, bytes32 requestId, uint256 payment, address callbackAddr, bytes4 callbackFunctionId, uint256 cancelExpiration, uint256 dataVersion, bytes data)"
+             data="$(jobRun.logData)"
+             topics="$(jobRun.logTopics)"]
+
+decode_cbor [type="cborparse"
+             data="$(decode_log.data)"]
+
+fetch       [type="http"
+             method=GET
+             url="$(decode_cbor.get)"
+             allowUnrestrictedNetworkAccess="true"]
+
+parse       [type="jsonparse"
+             path="$(decode_cbor.path)"
+             data="$(fetch)"]
+
+encode_data [type="ethabiencode"
+             abi="(bytes32 requestId, string value)"
+             data="{ \\"requestId\\": $(decode_log.requestId), \\"value\\": $(parse) }"]
+
+encode_tx   [type="ethabiencode"
+             abi="fulfillOracleRequest2(bytes32 requestId, uint256 payment, address callbackAddress, bytes4 callbackFunctionId, uint256 expiration, bytes data)"
+             data="{ \\"requestId\\": $(decode_log.requestId), \\"payment\\": $(decode_log.payment), \\"callbackAddress\\": $(decode_log.callbackAddr), \\"callbackFunctionId\\": $(decode_log.callbackFunctionId), \\"expiration\\": $(decode_log.cancelExpiration), \\"data\\": $(encode_data) }"]
+
+submit_tx   [type="ethtx"
+             to="0x4a7f227Afb2A36640781E59F3f491EB087d5aF64"
+             data="$(encode_tx)"]
+
+decode_log -> decode_cbor -> fetch -> parse -> encode_data -> encode_tx -> submit_tx
+"""
+
+
+```
+
+
+
