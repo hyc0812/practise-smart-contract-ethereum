@@ -2,6 +2,55 @@
 This is a repo for me to practise my Solidity skills.
 
 
+## Interface Practice
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.26;
+
+interface IStringStorage {
+    function getString() external view returns (string memory);
+    function setString(string calldata _str) external;
+}
+
+contract StringStorage is IStringStorage {
+    string private storedString;
+
+    event Received(address indexed from, uint256 amount);
+
+    function getString() external view override returns (string memory) {
+        return storedString;
+    }
+
+    function setString(string calldata _str) external override {
+        storedString = _str;
+    }
+
+    function getContractBalance() external view returns (uint256) {
+        return address(this).balance;
+    }
+
+    receive() external payable {
+        emit Received(msg.sender, msg.value);
+    }
+}
+
+
+contract String2 {
+    function getString(address _addr) external view returns (string memory){
+        return IStringStorage(_addr).getString();
+    }
+    function setString(address _addr, string calldata _newString) external {
+        IStringStorage(_addr).setString(_newString);
+    }
+}
+
+
+```
+
+
+
+
 ## Practice with Struct working with Array version 2
 
 ```solidity
